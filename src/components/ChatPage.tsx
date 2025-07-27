@@ -20,7 +20,7 @@ export default function ChatPage() {
     const newMessages: ChatMessage[] = [...messages, { role: "user", content: text }];
     setMessages(newMessages);
 
-    const response = await fetch("http://localhost:8000/stream", {
+    const response = await fetch("https://amamiya-kun-ava.hf.space/stream", {
       method: "POST",
       body: JSON.stringify({ messages: newMessages }),
       headers: { "Content-Type": "application/json" },
@@ -59,6 +59,15 @@ export default function ChatPage() {
         }
       }
     }
+
+    // Tandai akhir streaming agar blok markdown bisa diproses
+    setMessages((prev) =>
+      prev.map((msg, i) =>
+        i === prev.length - 1
+          ? { ...msg, content: assistantMessage + "\n" }
+          : msg
+      )
+    );
   };
 
   return (
@@ -69,7 +78,12 @@ export default function ChatPage() {
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-gray-50">
         {messages.map((msg, idx) => (
-          <Message key={idx} role={msg.role} content={msg.content} />
+          <Message
+            key={idx}
+            role={msg.role}
+            content={msg.content}
+            isMarkdown={true}
+          />
         ))}
         <div ref={bottomRef} />
       </div>
