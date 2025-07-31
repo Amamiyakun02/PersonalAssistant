@@ -1,4 +1,3 @@
-// ChatPage.tsx
 import { useState, useRef, useEffect } from "react";
 import ChatInput from "./ChatInput";
 import Message from "./Message";
@@ -16,18 +15,17 @@ export default function ChatPage() {
     document.title = "Virtual Assistant CRISTINA";
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
   const handleSend = async (text: string) => {
     const userMessage: ChatMessage = { role: "user", content: text };
     setMessages((prev) => [...prev, userMessage]);
 
-    // Langsung tampilkan placeholder assistant kosong
+    // Tambahkan pesan kosong untuk asisten (tempat update streaming)
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     const response = await fetch("http://127.0.0.1:8000/streamtext", {
       method: "POST",
-      body: JSON.stringify({
-        messages: [userMessage], // ✅ Kirim hanya pesan terakhir
-      }),
+      body: JSON.stringify({ messages: [userMessage] }),
       headers: { "Content-Type": "application/json" },
     });
 
@@ -48,21 +46,36 @@ export default function ChatPage() {
 
         try {
           const payload = JSON.parse(line.trim().replace(/^data:\s*/, ""));
-          assistantMessage += payload.text;
+          const newText = payload.text;
 
-          setMessages((prev) =>
-            prev.map((msg, i) =>
-              i === prev.length - 1
-                ? { ...msg, content: assistantMessage }
-                : msg
-            )
-          );
+          let buffer = "";
+
+          for (const char of newText) {
+            buffer += char;
+            assistantMessage += char;
+
+            // Setiap 3 karakter atau karakter terakhir
+            if (buffer.length >= 3 || char === newText[newText.length - 1]) {
+              setMessages((prev) =>
+                prev.map((msg, i) =>
+                  i === prev.length - 1
+                    ? { ...msg, content: assistantMessage }
+                    : msg
+                )
+              );
+              buffer = "";
+
+              // Lebih cepat: 5ms
+              await new Promise((resolve) => setTimeout(resolve, 5));
+            }
+          }
         } catch (err) {
           console.warn("Gagal parse streaming chunk:", line, err);
         }
       }
     }
-    // Tandai akhir streaming agar blok markdown bisa diproses
+
+    // Tambah newline di akhir jika perlu
     setMessages((prev) =>
       prev.map((msg, i) =>
         i === prev.length - 1
