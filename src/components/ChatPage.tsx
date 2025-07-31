@@ -13,16 +13,21 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    document.title = "Virtual Assistant CRISTINA";
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
   const handleSend = async (text: string) => {
-    const newMessages: ChatMessage[] = [...messages, { role: "user", content: text }];
-    setMessages(newMessages);
+    const userMessage: ChatMessage = { role: "user", content: text };
+    setMessages((prev) => [...prev, userMessage]);
 
-    const response = await fetch("https://amamiya-kun-ava.hf.space/stream", {
+    // Langsung tampilkan placeholder assistant kosong
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    const response = await fetch("http://127.0.0.1:8000/streamtext", {
       method: "POST",
-      body: JSON.stringify({ messages: newMessages }),
+      body: JSON.stringify({
+        messages: [userMessage], // ✅ Kirim hanya pesan terakhir
+      }),
       headers: { "Content-Type": "application/json" },
     });
 
@@ -30,7 +35,6 @@ export default function ChatPage() {
     const decoder = new TextDecoder("utf-8");
 
     let assistantMessage = "";
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
     while (reader) {
       const { value, done } = await reader.read();
@@ -40,26 +44,24 @@ export default function ChatPage() {
       const lines = chunk.split("\n");
 
       for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith("data:")) {
-          try {
-            const payload = JSON.parse(trimmed.replace("data:", "").trim());
-            assistantMessage += payload.text;
+        if (!line.trim()) continue;
 
-            setMessages((prev) =>
-              prev.map((msg, i) =>
-                i === prev.length - 1
-                  ? { ...msg, content: assistantMessage }
-                  : msg
-              )
-            );
-          } catch (err) {
-            console.warn("Gagal parse JSON:", err);
-          }
+        try {
+          const payload = JSON.parse(line.trim().replace(/^data:\s*/, ""));
+          assistantMessage += payload.text;
+
+          setMessages((prev) =>
+            prev.map((msg, i) =>
+              i === prev.length - 1
+                ? { ...msg, content: assistantMessage }
+                : msg
+            )
+          );
+        } catch (err) {
+          console.warn("Gagal parse streaming chunk:", line, err);
         }
       }
     }
-
     // Tandai akhir streaming agar blok markdown bisa diproses
     setMessages((prev) =>
       prev.map((msg, i) =>
@@ -73,7 +75,7 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto">
       <header className="p-4 border-b text-xl font-semibold text-center text-gray-700 bg-white shadow">
-        Asisten Anime ✨
+        CRISTINA ✨
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-gray-50">
