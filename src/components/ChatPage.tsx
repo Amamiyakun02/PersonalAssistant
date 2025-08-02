@@ -25,7 +25,8 @@ export default function ChatPage() {
     // Tambahkan pesan kosong untuk asisten (tempat update streaming)
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-    const response = await fetch("http://127.0.0.1:8000/chat_assistant", {
+    const response = await fetch("https://amamiya-kun-ava.hf.space/chat_assistant", {
+    // const response = await fetch("http://127.0.0.1:8000/chat_assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
