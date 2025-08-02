@@ -23,7 +23,7 @@ export default function ChatPage() {
     const userMessage: ChatMessage = { role: "user", content: text };
     setMessages((prev) => [...prev, userMessage, { role: "assistant", content: "" }]);
 
-    const response = await fetch("https://amamiya-kun-ava.hf.space//chat_assistant", {
+    const response = await fetch("https://amamiya-kun-ava.hf.space/chat_assistant", {
     // const response = await fetch("http://127.0.0.1:8000/chat_assistant", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
