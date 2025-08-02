@@ -16,23 +16,45 @@ export default function ChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const user_id = "user123"; // Ganti dengan user ID dinamis jika ada
+  const session_id = null; // Ganti dengan session ID aktif jika melanjutkan sesi
+
   const handleSend = async (text: string) => {
     const userMessage: ChatMessage = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage, { role: "assistant", content: "" }]);
 
-    // Tambahkan pesan kosong untuk asisten (tempat update streaming)
-    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-
-    const response = await fetch("http://127.0.0.1:8000/streamtext", {
+    const response = await fetch("https://amamiya-kun-ava.hf.space//chat_assistant", {
+    // const response = await fetch("http://127.0.0.1:8000/chat_assistant", {
       method: "POST",
-      body: JSON.stringify({ messages: [userMessage] }),
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id,
+        session_id,
+        messages: [userMessage],
+      }),
     });
 
     const reader = response.body?.getReader();
     const decoder = new TextDecoder("utf-8");
 
-    let assistantMessage = "";
+    const assistantMessageRef = useRef("");
+    let buffer = "";
+
+    // Interval untuk flush update ke UI
+    const flushInterval = setInterval(() => {
+      if (buffer.length === 0) return;
+
+      assistantMessageRef.current += buffer;
+      buffer = "";
+
+      setMessages((prev) =>
+        prev.map((msg, i) =>
+          i === prev.length - 1
+            ? { ...msg, content: assistantMessageRef.current }
+            : msg
+        )
+      );
+    }, 50); // tiap 50ms
 
     while (reader) {
       const { value, done } = await reader.read();
@@ -47,39 +69,21 @@ export default function ChatPage() {
         try {
           const payload = JSON.parse(line.trim().replace(/^data:\s*/, ""));
           const newText = payload.text;
-
-          let buffer = "";
-
-          for (const char of newText) {
-            buffer += char;
-            assistantMessage += char;
-
-            // Setiap 3 karakter atau karakter terakhir
-            if (buffer.length >= 3 || char === newText[newText.length - 1]) {
-              setMessages((prev) =>
-                prev.map((msg, i) =>
-                  i === prev.length - 1
-                    ? { ...msg, content: assistantMessage }
-                    : msg
-                )
-              );
-              buffer = "";
-
-              // Lebih cepat: 5ms
-              await new Promise((resolve) => setTimeout(resolve, 5));
-            }
-          }
+          buffer += newText;
         } catch (err) {
           console.warn("Gagal parse streaming chunk:", line, err);
         }
       }
     }
 
-    // Tambah newline di akhir jika perlu
+    // Akhiri streaming dan flush sisa buffer
+    clearInterval(flushInterval);
+    assistantMessageRef.current += buffer;
+
     setMessages((prev) =>
       prev.map((msg, i) =>
         i === prev.length - 1
-          ? { ...msg, content: assistantMessage + "\n" }
+          ? { ...msg, content: assistantMessageRef.current.trim() + "\n" }
           : msg
       )
     );
