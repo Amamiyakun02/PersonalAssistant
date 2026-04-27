@@ -25,7 +25,7 @@ export default function Message({ role, content, isMarkdown = false }: Props) {
           isUser ? "text-blue-600" : "text-purple-600"
         }`}
       >
-        {isUser ? "You" : "Cristina"}
+        {isUser ? "You" : "Robin"}
       </div>
 
       {isMarkdown ? (

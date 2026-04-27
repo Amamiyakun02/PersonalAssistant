@@ -12,7 +12,7 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    document.title = "Virtual Assistant CRISTINA";
+    document.title = "Virtual Agent ROBIN";
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -25,8 +25,8 @@ export default function ChatPage() {
     // Tambahkan pesan kosong untuk asisten (tempat update streaming)
     setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
-    const response = await fetch("https://amamiya-kun-ava.hf.space/chat_assistant", {
-    // const response = await fetch("http://127.0.0.1:8000/chat_assistant", {
+    const response = await fetch("https://myagentic-apps.fastapicloud.dev/chat_agents", {
+    // const response = await fetch("http://127.0.0.1:8000/chat_agents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -95,7 +95,7 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-screen max-w-2xl mx-auto">
       <header className="p-4 border-b text-xl font-semibold text-center text-gray-700 bg-white shadow">
-        CRISTINA ✨
+        ROBIN ✨
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 bg-gray-50">
